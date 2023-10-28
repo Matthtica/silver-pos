@@ -18,6 +18,7 @@ use http::header::CONTENT_TYPE;
 async fn main() {
 
     //let connection = &mut establish_connection();
+    //Mistake
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
         .allow_origin(Any)
