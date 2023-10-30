@@ -18,21 +18,6 @@ pub struct NewCategory {
 }
 
 #[derive(Queryable, Selectable, Serialize)]
-#[diesel(table_name = crate::schema::subcategories)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct SubCategory {
-    pub id: i32,
-    pub name: String
-}
-
-#[derive(Insertable)]
-#[diesel(table_name = crate::schema::subcategories)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewSubCategory {
-    pub name: String
-}
-
-#[derive(Queryable, Selectable, Serialize)]
 #[diesel(table_name = crate::schema::items)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Item {
@@ -41,11 +26,10 @@ pub struct Item {
     pub code_name: String,
     pub amount: i32,
     pub price: i32,
-    pub cat_id: i32,
-    pub subcat_id: i32
+    pub cat_id: i32
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Deserialize)]
 #[diesel(table_name = crate::schema::items)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct NewItem {
@@ -53,8 +37,7 @@ pub struct NewItem {
     pub code_name: String,
     pub amount: i32,
     pub price: i32,
-    pub cat_id: i32,
-    pub subcat_id: i32
+    pub cat_id: i32
 }
 
 #[derive(Queryable, Selectable)]
@@ -65,8 +48,7 @@ pub struct Transection {
     pub direction: bool,
     pub time: NaiveDateTime,
     pub price: i32,
-    pub cat_id: i32,
-    pub subcat_id: i32
+    pub cat_id: i32
 }
 
 #[derive(Insertable)]
@@ -76,6 +58,5 @@ pub struct NewTransection {
     pub direction: bool,
     pub time: NaiveDateTime,
     pub price: i32,
-    pub cat_id: i32,
-    pub subcat_id: i32
+    pub cat_id: i32
 }

@@ -1,12 +1,12 @@
 use silver_pos::*;
 use self::routes::{
     categories, 
-    subcategories,
-    items
+    items,
+    new_item
 };
 
 use axum::{
-    routing::get,
+    routing::{get, post},
     http::Method,
     Router,
 };
@@ -27,8 +27,8 @@ async fn main() {
     let app = Router::new()
         .route("/", get(root))
         .route("/categories", get(categories))
-        .route("/subcategories", get(subcategories))
         .route("/items", get(items))
+        .route("/new_item", post(new_item))
         .layer(cors);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));

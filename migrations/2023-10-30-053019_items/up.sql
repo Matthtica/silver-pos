@@ -6,6 +6,5 @@ CREATE TABLE items (
   code_name VARCHAR NOT NULL,
   amount INT NOT NULL,
   price INT NOT NULL,
-  cat_id INT NOT NULl, 
-  subcat_id INT NOT NULL
+  cat_id INT NOT NULL
 );

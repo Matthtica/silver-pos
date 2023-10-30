@@ -15,15 +15,6 @@ diesel::table! {
         amount -> Int4,
         price -> Int4,
         cat_id -> Int4,
-        subcat_id -> Int4,
-    }
-}
-
-diesel::table! {
-    subcategories (id) {
-        id -> Int4,
-        cat_id -> Int4,
-        name -> Text,
     }
 }
 
@@ -34,13 +25,11 @@ diesel::table! {
         time -> Timestamp,
         price -> Int4,
         cat_id -> Int4,
-        subcat_id -> Int4,
     }
 }
 
 diesel::allow_tables_to_appear_in_same_query!(
     categories,
     items,
-    subcategories,
     transections,
 );

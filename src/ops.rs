@@ -5,9 +5,9 @@ use crate::models::{
 use diesel::prelude::*;
 
 pub fn create_item(conn: &mut PgConnection, new_items: Vec<NewItem>) -> Item {
-    use crate::schema::items;
+    use crate::schema::items::dsl::items;
 
-    diesel::insert_into(items::table)
+    diesel::insert_into(items)
         .values(&new_items)
         .returning(Item::as_returning())
         .get_result(conn)
