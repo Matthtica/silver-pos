@@ -52,7 +52,7 @@ async fn main() {
         .route("/new_item", post(r::new_item))
         .route("/sse", get(sse_handler))
         .route("/new_cat", post(r::new_cat))
-        .route("/itemsbycat", post(r::items_by_cat))
+        .route("/items/:cat_id", get(r::items_by_cat))
         .route("/purchase", post(r::purchase))
         .layer(cors)
         .layer(Extension(pool));
