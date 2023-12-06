@@ -1,10 +1,7 @@
-use diesel::prelude::*;
 use serde::{Serialize, Deserialize};
 use sqlx::sqlx_macros::FromRow;
 
-#[derive(Queryable, Selectable, Serialize)]
-#[diesel(table_name = crate::schema::categories)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Serialize)]
 pub struct Category {
     pub id: i32,
     pub name: String,
@@ -14,9 +11,7 @@ pub struct Category {
     pub icon: String
 }
 
-#[derive(Insertable, Deserialize)]
-#[diesel(table_name = crate::schema::categories)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Deserialize)]
 pub struct NewCategory {
     pub name: String,
     pub m_name: String,
@@ -25,9 +20,7 @@ pub struct NewCategory {
     pub icon: String
 }
 
-#[derive(Queryable, Selectable, Serialize, FromRow)]
-#[diesel(table_name = crate::schema::items)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Serialize, FromRow)]
 pub struct Item {
     pub id: i32,
     pub name: String,
@@ -38,9 +31,7 @@ pub struct Item {
     pub cat_id: i32
 }
 
-#[derive(Insertable, Deserialize)]
-#[diesel(table_name = crate::schema::items)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
+#[derive(Deserialize)]
 pub struct NewItem {
     pub name: String,
     pub m_name: String,
