@@ -92,7 +92,6 @@ pub async fn items_by_cat(
     (StatusCode::OK, Json(items))
 }
 
-// purchase should submit a voucher
 pub async fn purchase(
     Extension(pool): Extension<Pool<Postgres>>,
     Json(payload): Json<NewVoucher>
@@ -101,14 +100,20 @@ pub async fn purchase(
         prev + item.quantity * item.price
     }) == payload.paid_amount;
 
-    let voucher = sqlx::query!(
-        "INSERT INTO vouchers (voucher_id, customer_name, customer_contact, cart_items, time, status)
-         VALUES ($1, $2, $3, $4, $5, $6)
+    let item_ids: Vec<i32> = payload.cart_items.iter().map(|item| item.id).collect();
+    let item_quantities: Vec<i32> = payload.cart_items.iter().map(|item| item.quantity).collect();
+    let item_prices: Vec<i32> = payload.cart_items.iter().map(|item| item.price).collect();
+
+    let voucher = sqlx::query_as!(Voucher,
+        "INSERT INTO vouchers (voucher_id, customer_name, customer_contact, item_ids, item_quantities, item_prices, time, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *",
         payload.voucher_id,
         payload.customer_name,
         payload.customer_contact,
-        Json(payload.cart_items) as _,
+        item_ids.as_slice(),
+        item_quantities.as_slice(),
+        item_prices.as_slice(),
         chrono::Utc::now().naive_utc(),
         status)
         .fetch_one(&pool)
@@ -116,4 +121,15 @@ pub async fn purchase(
         .expect("Error saving new voucher");
 
     (StatusCode::CREATED, Json(voucher))
+}
+
+pub async fn voucher_list(
+    Extension(pool): Extension<Pool<Postgres>>
+) -> (StatusCode, Json<Vec<Voucher>>) {
+    let vouchers = sqlx::query_as!(Voucher, "SELECT * FROM vouchers")
+        .fetch_all(&pool)
+        .await
+        .expect("Error loading vouchers");
+
+    (StatusCode::OK, Json(vouchers))
 }

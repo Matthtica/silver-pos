@@ -39,7 +39,6 @@ async fn main() {
         .await
         .expect("Error connecting to database");
 
-    // let connection = &mut establish_connection();
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
         .allow_origin(Any)
@@ -49,6 +48,7 @@ async fn main() {
         .route("/", get(root))
         .route("/categories", get(r::categories))
         .route("/items", get(r::items))
+        .route("/vouchers", get(r::voucher_list))
         .route("/new_item", post(r::new_item))
         .route("/sse", get(sse_handler))
         .route("/new_cat", post(r::new_cat))
