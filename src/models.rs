@@ -1,5 +1,4 @@
 use diesel::prelude::*;
-use chrono::prelude::*;
 use serde::{Serialize, Deserialize};
 use sqlx::sqlx_macros::FromRow;
 
@@ -78,42 +77,4 @@ pub struct NewVoucher {
     pub customer_contact: Option<String>,
     pub cart_items: Vec<CartItem>,
     pub paid_amount: i32
-}
-
-#[derive(Queryable, Selectable, Serialize)]
-#[diesel(table_name = crate::schema::transections)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct Transection {
-    pub id: i32,
-    pub time: NaiveDateTime,
-    pub price: i32,
-    pub cat_id: i32,
-    pub count: i32
-}
-
-#[derive(Insertable, Serialize, Deserialize)]
-#[diesel(table_name = crate::schema::transections)]
-#[diesel(check_for_backend(diesel::pg::Pg))]
-pub struct NewTransection {
-    pub time: NaiveDateTime,
-    pub price: i32,
-    pub cat_id: i32,
-    pub count: i32
-}
-
-impl NewTransection {
-    pub fn new(price: i32, cat_id: i32, count: i32) -> Self {
-        Self {
-            time: chrono::Utc::now().naive_utc(),
-            price,
-            cat_id,
-            count
-        }
-    }
-}
-
-#[derive(Deserialize)]
-pub struct KartItem {
-    pub item_id: i32,
-    pub count: i32
 }
