@@ -96,13 +96,25 @@ pub async fn purchase(
     Extension(pool): Extension<Pool<Postgres>>,
     Json(payload): Json<NewVoucher>
 ) -> (StatusCode, Json<Voucher>) {
-    let status = payload.cart_items.iter().fold(0, |prev, item| {
-        prev + item.quantity * item.price
-    }) == payload.paid_amount;
+    let status = {
+        let mut total = 0;
+        for i in 0..payload.item_ids.len() {
+            total += payload.item_prices[i] * payload.item_quantities[i];
+        }
+        total == payload.paid_amount
+    };
 
-    let item_ids: Vec<i32> = payload.cart_items.iter().map(|item| item.id).collect();
-    let item_quantities: Vec<i32> = payload.cart_items.iter().map(|item| item.quantity).collect();
-    let item_prices: Vec<i32> = payload.cart_items.iter().map(|item| item.price).collect();
+    for i in 0..payload.item_ids.len() {
+        let _ = sqlx::query!("UPDATE items SET amount = amount - $1 WHERE id = $2",
+            payload.item_quantities[i],
+            payload.item_ids[i])
+            .execute(&pool)
+            .await
+            .expect("Error updating item amount");
+    }
+
+    println!("{}", payload.time.to_string());
+    println!("{}", chrono::Utc::now().naive_utc().to_string());
 
     let voucher = sqlx::query_as!(Voucher,
         "INSERT INTO vouchers (voucher_id, customer_name, customer_contact, item_ids, item_quantities, item_prices, time, status)
@@ -111,14 +123,15 @@ pub async fn purchase(
         payload.voucher_id,
         payload.customer_name,
         payload.customer_contact,
-        item_ids.as_slice(),
-        item_quantities.as_slice(),
-        item_prices.as_slice(),
-        chrono::Utc::now().naive_utc(),
+        payload.item_ids.as_slice(),
+        payload.item_quantities.as_slice(),
+        payload.item_prices.as_slice(),
+        payload.time.naive_utc(),
         status)
         .fetch_one(&pool)
         .await
         .expect("Error saving new voucher");
+
 
     (StatusCode::CREATED, Json(voucher))
 }

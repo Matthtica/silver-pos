@@ -1,5 +1,4 @@
 use serde::{Serialize, Deserialize};
-use sqlx::sqlx_macros::FromRow;
 
 #[derive(Serialize)]
 pub struct Category {
@@ -20,7 +19,7 @@ pub struct NewCategory {
     pub icon: String
 }
 
-#[derive(Serialize, FromRow)]
+#[derive(Serialize)]
 pub struct Item {
     pub id: i32,
     pub name: String,
@@ -54,18 +53,14 @@ pub struct Voucher {
     pub status: bool
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct CartItem {
-    pub id: i32,
-    pub quantity: i32,
-    pub price: i32
-}
-
 #[derive(Deserialize)]
 pub struct NewVoucher {
     pub voucher_id: String,
     pub customer_name: Option<String>,
     pub customer_contact: Option<String>,
-    pub cart_items: Vec<CartItem>,
+    pub item_ids: Vec<i32>,
+    pub item_quantities: Vec<i32>,
+    pub item_prices: Vec<i32>,
+    pub time: chrono::DateTime<chrono::Utc>,
     pub paid_amount: i32
 }
