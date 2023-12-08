@@ -12,13 +12,10 @@ use sqlx::postgres::PgPoolOptions; // <---
 use std::{convert::Infallible, time::Duration};
 use tokio_stream::StreamExt as _; // <--- // <---
 
-use http::header::CONTENT_TYPE;
-use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 
 use dotenvy::dotenv;
 use std::env;
-
 
 async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let stream = stream::repeat_with(|| Event::default().data("Hi!"))
@@ -27,8 +24,8 @@ async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     Sse::new(stream).keep_alive(KeepAlive::default())
 }
 
-#[tokio::main]
-async fn main() {
+#[shuttle_runtime::main]
+async fn main() -> shuttle_axum::ShuttleAxum {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL not found in .env file");
@@ -41,8 +38,8 @@ async fn main() {
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
-        .allow_origin(Any)
-        .allow_headers([CONTENT_TYPE]);
+        .allow_origin(Any);
+        //.allow_headers([CONTENT_TYPE]);
 
     let app = Router::new()
         .route("/", get(root))
@@ -57,12 +54,16 @@ async fn main() {
         .layer(cors)
         .layer(Extension(pool));
 
+    /*
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("Axum server listening at {}", addr.to_string());
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
+    */
+
+    Ok(app.into())
 }
 
 async fn root() -> &'static str {
