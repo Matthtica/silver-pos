@@ -1,6 +1,6 @@
 -- Add migration script here
 
-DROP TABLE vouchers;
+DROP TABLE IF EXISTS vouchers;
 
 CREATE TABLE vouchers (
   id SERIAL PRIMARY KEY,
