@@ -3,6 +3,7 @@ use silver_pos::*;
 
 use axum::{
     http::Method,
+    http::header::CONTENT_TYPE,
     response::sse::{Event, KeepAlive, Sse}, // <---
     routing::{get, post},
     Router, Extension,
@@ -38,8 +39,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST])
-        .allow_origin(Any);
-        //.allow_headers([CONTENT_TYPE]);
+        .allow_origin(Any)
+        .allow_headers([CONTENT_TYPE]);
 
     let app = Router::new()
         .route("/", get(root))
