@@ -113,9 +113,6 @@ pub async fn purchase(
             .expect("Error updating item amount");
     }
 
-    println!("{}", payload.time.to_string());
-    println!("{}", chrono::Utc::now().naive_utc().to_string());
-
     let voucher = sqlx::query_as!(Voucher,
         "INSERT INTO vouchers (voucher_id, customer_name, customer_contact, item_ids, item_quantities, item_prices, time, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)

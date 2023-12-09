@@ -26,6 +26,38 @@ async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
 }
 
 #[shuttle_runtime::main]
+pub async fn axum (
+    #[shuttle_shared_db::Postgres] pool: sqlx::PgPool,
+    #[shuttle_secrets::Secrets] secrets: shuttle_secrets::SecretStore,
+) -> shuttle_axum::ShuttleAxum {
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("Migration failed :(");
+
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST])
+        .allow_origin(Any)
+        .allow_headers([CONTENT_TYPE]);
+
+    let app = Router::new()
+        .route("/", get(root))
+        .route("/categories", get(r::categories))
+        .route("/items", get(r::items))
+        .route("/vouchers", get(r::voucher_list))
+        .route("/new_item", post(r::new_item))
+        .route("/sse", get(sse_handler))
+        .route("/new_cat", post(r::new_cat))
+        .route("/items/:cat_id", get(r::items_by_cat))
+        .route("/purchase", post(r::purchase))
+        .layer(cors)
+        .layer(Extension(pool));
+
+    Ok(app.into())
+}
+
+/*
+#[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
     dotenv().ok();
 
@@ -65,7 +97,7 @@ async fn main() -> shuttle_axum::ShuttleAxum {
     */
 
     Ok(app.into())
-}
+}*/
 
 async fn root() -> &'static str {
     "Hello, World!"
