@@ -4,31 +4,15 @@ use silver_pos::*;
 use axum::{
     http::Method,
     http::header::CONTENT_TYPE,
-    response::sse::{Event, KeepAlive, Sse}, // <---
     routing::{get, post},
     Router, Extension,
 };
-use futures_util::stream::{self, Stream};
-use sqlx::postgres::PgPoolOptions; // <---
-use std::{convert::Infallible, time::Duration};
-use tokio_stream::StreamExt as _; // <--- // <---
 
 use tower_http::cors::{Any, CorsLayer};
-
-use dotenvy::dotenv;
-use std::env;
-
-async fn sse_handler() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let stream = stream::repeat_with(|| Event::default().data("Hi!"))
-        .map(Ok)
-        .throttle(Duration::from_secs(1));
-    Sse::new(stream).keep_alive(KeepAlive::default())
-}
 
 #[shuttle_runtime::main]
 pub async fn axum (
     #[shuttle_shared_db::Postgres] pool: sqlx::PgPool,
-    #[shuttle_secrets::Secrets] secrets: shuttle_secrets::SecretStore,
 ) -> shuttle_axum::ShuttleAxum {
     sqlx::migrate!()
         .run(&pool)
@@ -46,7 +30,6 @@ pub async fn axum (
         .route("/items", get(r::items))
         .route("/vouchers", get(r::voucher_list))
         .route("/new_item", post(r::new_item))
-        .route("/sse", get(sse_handler))
         .route("/new_cat", post(r::new_cat))
         .route("/items/:cat_id", get(r::items_by_cat))
         .route("/purchase", post(r::purchase))
