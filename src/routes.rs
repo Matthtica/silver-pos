@@ -81,6 +81,36 @@ pub async fn new_cat(
     (StatusCode::CREATED, Json(cat))
 }
 
+pub async fn cash_flow_list(
+    State(pool): State<Pool<Postgres>>
+) -> (StatusCode, Json<Vec<CashFlow>>) {
+    let cash_flows: Vec<CashFlow> = sqlx::query_as!(CashFlow, "SELECT * FROM cashflow")
+        .fetch_all(&pool)
+        .await
+        .expect("Error loading cash flow");
+
+    (StatusCode::OK, Json(cash_flows))
+}
+
+pub async fn new_cash_flow(
+    State(pool): State<Pool<Postgres>>,
+    Json(payload): Json<NewCashFlow>
+) -> (StatusCode, Json<CashFlow>) {
+
+    let inserted_cash_flow = sqlx::query_as!(CashFlow,
+        "INSERT INTO cashflow (time, amount, description)
+         VALUES ($1, $2, $3)
+         RETURNING *",
+        payload.time.naive_utc(),
+        payload.amount,
+        payload.description)
+        .fetch_one(&pool)
+        .await
+        .expect("Error saving new cash flow");
+
+    (StatusCode::CREATED, Json(inserted_cash_flow))
+}
+
 pub async fn items_by_cat(
     State(pool): State<Pool<Postgres>>,
     Path(cat_id): Path<i32>,
@@ -98,13 +128,16 @@ pub async fn purchase(
     State(pool): State<Pool<Postgres>>,
     Json(payload): Json<NewVoucher>
 ) -> (StatusCode, Json<Voucher>) {
-    let status = {
+
+    let total = {
         let mut total = 0;
         for i in 0..payload.item_ids.len() {
             total += payload.item_prices[i] * payload.item_quantities[i];
         }
-        total == payload.paid_amount
+        total
     };
+
+    let status = total == payload.paid_amount;
 
     for i in 0..payload.item_ids.len() {
         let _ = sqlx::query!("UPDATE items SET amount = amount - $1 WHERE id = $2",
@@ -131,6 +164,18 @@ pub async fn purchase(
         .await
         .expect("Error saving new voucher");
 
+    // TODO: Error handling
+
+    if payload.paid_amount != 0 {
+        sqlx::query!("INSERT INTO cashflow (time, amount, description)
+            VALUES ($1, $2, $3)",
+            payload.time.naive_utc(),
+            payload.paid_amount,
+            "Sale")
+            .execute(&pool)
+            .await
+            .expect("Error saving new cash flow");
+    }
 
     (StatusCode::CREATED, Json(voucher))
 }

@@ -64,3 +64,18 @@ pub struct NewVoucher {
     pub time: chrono::DateTime<chrono::Utc>,
     pub paid_amount: i32
 }
+
+#[derive(Serialize)]
+pub struct CashFlow {
+    pub id: i32,
+    pub time: chrono::NaiveDateTime,
+    pub amount: i32,
+    pub description: String
+}
+
+#[derive(Deserialize)]
+pub struct NewCashFlow {
+    pub time: chrono::DateTime<chrono::Utc>,
+    pub amount: i32,
+    pub description: String
+}
