@@ -5,7 +5,7 @@ use axum::{
     http::Method,
     http::header::CONTENT_TYPE,
     routing::{get, post},
-    Router, Extension,
+    Router
 };
 
 use tower_http::cors::{Any, CorsLayer};
@@ -34,7 +34,7 @@ pub async fn axum (
         .route("/items/:cat_id", get(r::items_by_cat))
         .route("/purchase", post(r::purchase))
         .layer(cors)
-        .layer(Extension(pool));
+        .with_state(pool);
 
     Ok(app.into())
 }

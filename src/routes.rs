@@ -1,8 +1,10 @@
 use axum::{
     http::StatusCode,
-    Extension,
     Json,
-    extract::Path
+    extract::{
+        Path,
+        State
+    }
 };
 use crate::models::*;
 
@@ -12,7 +14,7 @@ use sqlx::{
 };
 
 pub async fn categories(
-    Extension(pool): Extension<Pool<Postgres>>
+    State(pool): State<Pool<Postgres>>
 ) -> (StatusCode, Json<Vec<Category>>) {
     let categories = sqlx::query_as!(Category, "SELECT * FROM categories")
         .fetch_all(&pool)
@@ -23,7 +25,7 @@ pub async fn categories(
 }
 
 pub async fn items(
-    Extension(pool): Extension<Pool<Postgres>>
+    State(pool): State<Pool<Postgres>>
 ) -> (StatusCode, Json<Vec<Item>>) {
     let items = sqlx::query_as!(Item, "SELECT * FROM items")
         .fetch_all(&pool)
@@ -34,7 +36,7 @@ pub async fn items(
 }
 
 pub async fn new_item(
-    Extension(pool): Extension<Pool<Postgres>>,
+    State(pool): State<Pool<Postgres>>,
     Json(payload): Json<NewItem>
 ) -> (StatusCode, Json<Item>) {
     let cat = sqlx::query_as!(Category,"SELECT * FROM categories WHERE id = $1", payload.cat_id)
@@ -60,7 +62,7 @@ pub async fn new_item(
 }
 
 pub async fn new_cat(
-    Extension(pool): Extension<Pool<Postgres>>,
+    State(pool): State<Pool<Postgres>>,
     Json(payload): Json<NewCategory>
 ) -> (StatusCode, Json<Category>) {
     let cat = sqlx::query_as!(Category,
@@ -80,7 +82,7 @@ pub async fn new_cat(
 }
 
 pub async fn items_by_cat(
-    Extension(pool): Extension<Pool<Postgres>>,
+    State(pool): State<Pool<Postgres>>,
     Path(cat_id): Path<i32>,
 ) -> (StatusCode, Json<Vec<Item>>) {
 
@@ -93,7 +95,7 @@ pub async fn items_by_cat(
 }
 
 pub async fn purchase(
-    Extension(pool): Extension<Pool<Postgres>>,
+    State(pool): State<Pool<Postgres>>,
     Json(payload): Json<NewVoucher>
 ) -> (StatusCode, Json<Voucher>) {
     let status = {
@@ -134,7 +136,7 @@ pub async fn purchase(
 }
 
 pub async fn voucher_list(
-    Extension(pool): Extension<Pool<Postgres>>
+    State(pool): State<Pool<Postgres>>
 ) -> (StatusCode, Json<Vec<Voucher>>) {
     let vouchers = sqlx::query_as!(Voucher, "SELECT * FROM vouchers")
         .fetch_all(&pool)
