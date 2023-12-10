@@ -34,6 +34,7 @@ pub async fn axum (
         .route("/new_cat", post(r::new_cat))
         .route("/new_cashflow", post(r::new_cash_flow))
         .route("/items/:cat_id", get(r::items_by_cat))
+        .route("/vouchers/:id", get(r::voucher_by_id))
         .route("/purchase", post(r::purchase))
         .layer(cors)
         .with_state(pool);

@@ -50,7 +50,8 @@ pub struct Voucher {
     pub item_quantities: Vec<i32>,
     pub item_prices: Vec<i32>,
     pub time: chrono::NaiveDateTime,
-    pub status: bool
+    pub total: i32,
+    pub paid: i32
 }
 
 #[derive(Deserialize)]
@@ -62,7 +63,28 @@ pub struct NewVoucher {
     pub item_quantities: Vec<i32>,
     pub item_prices: Vec<i32>,
     pub time: chrono::DateTime<chrono::Utc>,
-    pub paid_amount: i32
+    pub paid: i32
+}
+
+#[derive(Serialize)]
+pub struct CartItem {
+    pub item_id: i32,
+    pub name: String,
+    pub m_name: String,
+    pub quantity: i32,
+    pub price: i32
+}
+
+#[derive(Serialize)]
+pub struct FullVoucher {
+    pub id: i32,
+    pub voucher_id: String,
+    pub customer_name: Option<String>,
+    pub customer_contact: Option<String>,
+    pub items: Vec<CartItem>,
+    pub time: chrono::NaiveDateTime,
+    pub total: i32,
+    pub paid: i32
 }
 
 #[derive(Serialize)]

@@ -137,8 +137,6 @@ pub async fn purchase(
         total
     };
 
-    let status = total == payload.paid_amount;
-
     for i in 0..payload.item_ids.len() {
         let _ = sqlx::query!("UPDATE items SET amount = amount - $1 WHERE id = $2",
             payload.item_quantities[i],
@@ -149,8 +147,8 @@ pub async fn purchase(
     }
 
     let voucher = sqlx::query_as!(Voucher,
-        "INSERT INTO vouchers (voucher_id, customer_name, customer_contact, item_ids, item_quantities, item_prices, time, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        "INSERT INTO vouchers (voucher_id, customer_name, customer_contact, item_ids, item_quantities, item_prices, time, total, paid)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *",
         payload.voucher_id,
         payload.customer_name,
@@ -159,18 +157,19 @@ pub async fn purchase(
         payload.item_quantities.as_slice(),
         payload.item_prices.as_slice(),
         payload.time.naive_utc(),
-        status)
+        total,
+        payload.paid)
         .fetch_one(&pool)
         .await
         .expect("Error saving new voucher");
 
     // TODO: Error handling
 
-    if payload.paid_amount != 0 {
+    if payload.paid != 0 {
         sqlx::query!("INSERT INTO cashflow (time, amount, description)
             VALUES ($1, $2, $3)",
             payload.time.naive_utc(),
-            payload.paid_amount,
+            payload.paid,
             "Sale")
             .execute(&pool)
             .await
@@ -189,4 +188,45 @@ pub async fn voucher_list(
         .expect("Error loading vouchers");
 
     (StatusCode::OK, Json(vouchers))
+}
+
+pub async fn voucher_by_id(
+    State(pool): State<Pool<Postgres>>,
+    Path(id): Path<i32>,
+) -> (StatusCode, Json<FullVoucher>) {
+    let voucher: Voucher = sqlx::query_as!(Voucher, "SELECT * FROM vouchers WHERE id = $1", id)
+        .fetch_one(&pool)
+        .await
+        .expect("Error loading voucher by id");
+
+    let items: Vec<Item> = sqlx::query_as!(Item, "SELECT * FROM items WHERE id = ANY($1::int[])", &voucher.item_ids)
+        .fetch_all(&pool)
+        .await
+        .expect("loading items by ids");
+
+    let cart_items: Vec<CartItem> = voucher.item_ids.iter().map(|item_id| {
+        let item = items.iter().find(|i| i.id == *item_id).unwrap();
+        let ind = voucher.item_ids.iter().position(|i| i == item_id).unwrap();
+
+        CartItem {
+            item_id: *item_id,
+            name: item.name.clone(),
+            m_name: item.m_name.clone(),
+            quantity: voucher.item_quantities[ind],
+            price: voucher.item_prices[ind]
+        }
+    }).collect();
+
+    let full_voucher = FullVoucher {
+        id: voucher.id,
+        voucher_id: voucher.voucher_id,
+        customer_name: voucher.customer_name,
+        customer_contact: voucher.customer_contact,
+        items: cart_items,
+        time: voucher.time,
+        total: voucher.total,
+        paid: voucher.paid
+    };
+
+    (StatusCode::OK, Json(full_voucher))
 }
