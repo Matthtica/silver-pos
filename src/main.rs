@@ -29,6 +29,7 @@ pub async fn axum (
         .route("/categories", get(r::categories))
         .route("/items", get(r::items))
         .route("/vouchers", get(r::voucher_list))
+        .route("/partial_vouchers", get(r::partial_vouchers))
         .route("/cashflows", get(r::cash_flow_list))
         .route("/new_item", post(r::new_item))
         .route("/new_cat", post(r::new_cat))

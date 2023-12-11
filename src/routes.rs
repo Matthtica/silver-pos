@@ -65,6 +65,15 @@ pub async fn new_cat(
     State(pool): State<Pool<Postgres>>,
     Json(payload): Json<NewCategory>
 ) -> (StatusCode, Json<Category>) {
+    let existing_cats: Vec<Category> = sqlx::query_as!(Category, "SELECT * FROM categories WHERE code_name = $1", payload.code_name)
+        .fetch_all(&pool)
+        .await
+        .expect("Error loading category");
+    
+    if existing_cats.len() > 0 {
+        return (StatusCode::CONFLICT, Json(existing_cats[0].clone()));
+    }
+
     let cat = sqlx::query_as!(Category,
         "INSERT INTO categories (name, m_name, code_name, color, icon)
          VALUES ($1, $2, $3, $4, $5)
@@ -188,6 +197,26 @@ pub async fn voucher_list(
         .expect("Error loading vouchers");
 
     (StatusCode::OK, Json(vouchers))
+}
+
+pub async fn partial_vouchers(
+    State(pool): State<Pool<Postgres>>,
+) -> (StatusCode, Json<Vec<PartialVoucher>>) {
+    let vouchers = sqlx::query_as!(Voucher, "SELECT * FROM vouchers")
+        .fetch_all(&pool)
+        .await
+        .expect("Error loading vouchers");
+
+    let partial_vouchers: Vec<PartialVoucher> = vouchers.iter().map(|voucher| PartialVoucher {
+        id: voucher.id,
+        voucher_id: voucher.voucher_id.clone(),
+        customer_name: voucher.customer_name.clone(),
+        customer_contact: voucher.customer_contact.clone(),
+        time: voucher.time,
+        total: voucher.total,
+        paid: voucher.paid
+    }).collect();
+    (StatusCode::OK, Json(partial_vouchers))
 }
 
 pub async fn voucher_by_id(

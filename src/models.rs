@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone, Debug)]
 pub struct Category {
     pub id: i32,
     pub name: String,
@@ -49,6 +49,17 @@ pub struct Voucher {
     pub item_ids: Vec<i32>,
     pub item_quantities: Vec<i32>,
     pub item_prices: Vec<i32>,
+    pub time: chrono::NaiveDateTime,
+    pub total: i32,
+    pub paid: i32
+}
+
+#[derive(Serialize)]
+pub struct PartialVoucher {
+    pub id: i32,
+    pub voucher_id: String,
+    pub customer_name: Option<String>,
+    pub customer_contact: Option<String>,
     pub time: chrono::NaiveDateTime,
     pub total: i32,
     pub paid: i32
