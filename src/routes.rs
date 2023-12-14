@@ -64,20 +64,19 @@ pub async fn new_item(
 pub async fn new_cat(
     State(pool): State<Pool<Postgres>>,
     Json(payload): Json<NewCategory>
-) -> (StatusCode, Json<Category>) {
+) -> StatusCode {
     let existing_cats: Vec<Category> = sqlx::query_as!(Category, "SELECT * FROM categories WHERE code_name = $1", payload.code_name)
         .fetch_all(&pool)
         .await
         .expect("Error loading category");
-    
+
     if existing_cats.len() > 0 {
-        return (StatusCode::CONFLICT, Json(existing_cats[0].clone()));
+        return StatusCode::CONFLICT;
     }
 
-    let cat = sqlx::query_as!(Category,
-        "INSERT INTO categories (name, m_name, code_name, color, icon)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *",
+    sqlx::query!("INSERT INTO categories (name, m_name, code_name, color, icon)
+                  VALUES ($1, $2, $3, $4, $5)
+                  RETURNING *",
         payload.name,
         payload.m_name,
         payload.code_name,
@@ -87,7 +86,47 @@ pub async fn new_cat(
         .await
         .expect("Error saving new category");
 
-    (StatusCode::CREATED, Json(cat))
+    StatusCode::CREATED
+}
+
+pub async fn delete_cat(
+    State(pool): State<Pool<Postgres>>,
+    Path(id): Path<i32>
+) -> StatusCode {
+    let cats: Vec<Item> = sqlx::query_as!(Item, "SELECT * FROM items WHERE cat_id = $1", id)
+        .fetch_all(&pool)
+        .await
+        .expect("Error feting item with cat_id");
+
+    if cats.len() > 0 {
+        return StatusCode::CONFLICT;
+    }
+    sqlx::query!("DELETE FROM categories WHERE id = $1", id)
+        .execute(&pool)
+        .await
+        .expect("Cannot delete category with id");
+
+    StatusCode::OK
+}
+
+pub async fn delete_item(
+    State(pool): State<Pool<Postgres>>,
+    Path(id): Path<i32>
+) -> StatusCode {
+    let item: Result<Item, sqlx::Error> = sqlx::query_as!(Item,"SELECT * FROM items WHERE id = $1 AND amount = 0", id)
+        .fetch_one(&pool)
+        .await;
+
+    if item.is_err() {
+        return StatusCode::UNPROCESSABLE_ENTITY;
+    }
+
+    sqlx::query!("DELETE FROM items WHERE id = $1 AND amount = 0", id)
+        .execute(&pool)
+        .await
+        .expect("Error deleting item with id and amount = 0");
+
+    StatusCode::OK
 }
 
 pub async fn cash_flow_list(
