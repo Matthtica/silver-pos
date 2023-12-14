@@ -38,27 +38,50 @@ pub async fn items(
 pub async fn new_item(
     State(pool): State<Pool<Postgres>>,
     Json(payload): Json<NewItem>
-) -> (StatusCode, Json<Item>) {
+) -> StatusCode {
     let cat = sqlx::query_as!(Category,"SELECT * FROM categories WHERE id = $1", payload.cat_id)
         .fetch_one(&pool)
         .await
         .expect("Error loading category");
 
-    let inserted_item = sqlx::query_as!(Item,
+    let code_name = cat.code_name + &payload.code_name;
+
+    let item: Result<Item, sqlx::Error> = sqlx::query_as!(Item, "SELECT * FROM items WHERE code_name = $1", code_name)
+        .fetch_one(&pool)
+        .await;
+
+    if item.is_ok() {
+        return StatusCode::CONFLICT;
+    }
+
+    sqlx::query!(
         "INSERT INTO items (name, m_name, code_name, amount, price, cat_id)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING *",
+         VALUES ($1, $2, $3, $4, $5, $6)",
         payload.name,
         payload.m_name,
-        cat.code_name + &payload.code_name,
-        payload.amount,
+        code_name,
+        0,
         payload.price,
         payload.cat_id)
-        .fetch_one(&pool)
+        .execute(&pool)
         .await
         .expect("Error saving new item");
 
-    (StatusCode::CREATED, Json(inserted_item))
+    StatusCode::CREATED
+}
+
+pub async fn add_stock(
+    State(pool): State<Pool<Postgres>>,
+    Json(payload): Json<NewStock>
+) -> StatusCode {
+    sqlx::query!("UPDATE items SET amount = amount + $1 WHERE id = $2",
+        payload.amount,
+        payload.id)
+        .execute(&pool)
+        .await
+        .expect("Error updating item amount");
+
+    StatusCode::OK
 }
 
 pub async fn new_cat(

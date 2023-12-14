@@ -35,9 +35,14 @@ pub struct NewItem {
     pub name: String,
     pub m_name: String,
     pub code_name: String,
-    pub amount: i32,
     pub price: i32,
     pub cat_id: i32
+}
+
+#[derive(Deserialize)]
+pub struct NewStock {
+    pub id: i32,
+    pub amount: i32
 }
 
 #[derive(Serialize, Deserialize)]
