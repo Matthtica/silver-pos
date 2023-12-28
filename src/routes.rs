@@ -3,21 +3,16 @@ use axum::{
     Json,
     extract::{
         Path,
-        State
+        State,
     }
 };
 use crate::models::*;
 
-use sqlx::{
-    Pool,
-    postgres::Postgres
-};
-
 pub async fn categories(
-    State(pool): State<Pool<Postgres>>
+    State(state): State<AppState>
 ) -> (StatusCode, Json<Vec<Category>>) {
     let categories = sqlx::query_as!(Category, "SELECT * FROM categories")
-        .fetch_all(&pool)
+        .fetch_all(&state.db)
         .await
         .expect("Error loading categories");
 
@@ -25,10 +20,10 @@ pub async fn categories(
 }
 
 pub async fn items(
-    State(pool): State<Pool<Postgres>>
+    State(state): State<AppState>
 ) -> (StatusCode, Json<Vec<Item>>) {
     let items = sqlx::query_as!(Item, "SELECT * FROM items")
-        .fetch_all(&pool)
+        .fetch_all(&state.db)
         .await
         .expect("Error loading items");
 
@@ -36,18 +31,18 @@ pub async fn items(
 }
 
 pub async fn new_item(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<AppState>,
     Json(payload): Json<NewItem>
 ) -> StatusCode {
     let cat = sqlx::query_as!(Category,"SELECT * FROM categories WHERE id = $1", payload.cat_id)
-        .fetch_one(&pool)
+        .fetch_one(&state.db)
         .await
         .expect("Error loading category");
 
     let code_name = cat.code_name + &payload.code_name;
 
     let item: Result<Item, sqlx::Error> = sqlx::query_as!(Item, "SELECT * FROM items WHERE code_name = $1", code_name)
-        .fetch_one(&pool)
+        .fetch_one(&state.db)
         .await;
 
     if item.is_ok() {
@@ -63,7 +58,7 @@ pub async fn new_item(
         0,
         payload.price,
         payload.cat_id)
-        .execute(&pool)
+        .execute(&state.db)
         .await
         .expect("Error saving new item");
 
@@ -71,13 +66,13 @@ pub async fn new_item(
 }
 
 pub async fn add_stock(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<AppState>,
     Json(payload): Json<NewStock>
 ) -> StatusCode {
     sqlx::query!("UPDATE items SET amount = amount + $1 WHERE id = $2",
         payload.amount,
         payload.id)
-        .execute(&pool)
+        .execute(&state.db)
         .await
         .expect("Error updating item amount");
 
@@ -85,11 +80,11 @@ pub async fn add_stock(
 }
 
 pub async fn new_cat(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<AppState>,
     Json(payload): Json<NewCategory>
 ) -> StatusCode {
     let existing_cats: Vec<Category> = sqlx::query_as!(Category, "SELECT * FROM categories WHERE code_name = $1", payload.code_name)
-        .fetch_all(&pool)
+        .fetch_all(&state.db)
         .await
         .expect("Error loading category");
 
@@ -105,7 +100,7 @@ pub async fn new_cat(
         payload.code_name,
         payload.color,
         payload.icon)
-        .fetch_one(&pool)
+        .fetch_one(&state.db)
         .await
         .expect("Error saving new category");
 
@@ -113,11 +108,11 @@ pub async fn new_cat(
 }
 
 pub async fn delete_cat(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<AppState>,
     Path(id): Path<i32>
 ) -> StatusCode {
     let cats: Vec<Item> = sqlx::query_as!(Item, "SELECT * FROM items WHERE cat_id = $1", id)
-        .fetch_all(&pool)
+        .fetch_all(&state.db)
         .await
         .expect("Error feting item with cat_id");
 
@@ -125,7 +120,7 @@ pub async fn delete_cat(
         return StatusCode::CONFLICT;
     }
     sqlx::query!("DELETE FROM categories WHERE id = $1", id)
-        .execute(&pool)
+        .execute(&state.db)
         .await
         .expect("Cannot delete category with id");
 
@@ -133,11 +128,11 @@ pub async fn delete_cat(
 }
 
 pub async fn delete_item(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<AppState>,
     Path(id): Path<i32>
 ) -> StatusCode {
     let item: Result<Item, sqlx::Error> = sqlx::query_as!(Item,"SELECT * FROM items WHERE id = $1 AND amount = 0", id)
-        .fetch_one(&pool)
+        .fetch_one(&state.db)
         .await;
 
     if item.is_err() {
@@ -145,7 +140,7 @@ pub async fn delete_item(
     }
 
     sqlx::query!("DELETE FROM items WHERE id = $1 AND amount = 0", id)
-        .execute(&pool)
+        .execute(&state.db)
         .await
         .expect("Error deleting item with id and amount = 0");
 
@@ -153,10 +148,10 @@ pub async fn delete_item(
 }
 
 pub async fn cash_flow_list(
-    State(pool): State<Pool<Postgres>>
+    State(state): State<AppState>
 ) -> (StatusCode, Json<Vec<CashFlow>>) {
     let cash_flows: Vec<CashFlow> = sqlx::query_as!(CashFlow, "SELECT * FROM cashflow")
-        .fetch_all(&pool)
+        .fetch_all(&state.db)
         .await
         .expect("Error loading cash flow");
 
@@ -164,7 +159,7 @@ pub async fn cash_flow_list(
 }
 
 pub async fn new_cash_flow(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<AppState>,
     Json(payload): Json<NewCashFlow>
 ) -> (StatusCode, Json<CashFlow>) {
 
@@ -175,7 +170,7 @@ pub async fn new_cash_flow(
         payload.time.naive_utc(),
         payload.amount,
         payload.description)
-        .fetch_one(&pool)
+        .fetch_one(&state.db)
         .await
         .expect("Error saving new cash flow");
 
@@ -183,12 +178,12 @@ pub async fn new_cash_flow(
 }
 
 pub async fn items_by_cat(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<AppState>,
     Path(cat_id): Path<i32>,
 ) -> (StatusCode, Json<Vec<Item>>) {
 
     let items = sqlx::query_as!(Item, "SELECT * FROM items WHERE cat_id = $1", cat_id)
-        .fetch_all(&pool)
+        .fetch_all(&state.db)
         .await
         .expect("Error loading items by cat");
 
@@ -196,7 +191,7 @@ pub async fn items_by_cat(
 }
 
 pub async fn purchase(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<AppState>,
     Json(payload): Json<NewVoucher>
 ) -> (StatusCode, Json<Voucher>) {
 
@@ -212,7 +207,7 @@ pub async fn purchase(
         let _ = sqlx::query!("UPDATE items SET amount = amount - $1 WHERE id = $2",
             payload.item_quantities[i],
             payload.item_ids[i])
-            .execute(&pool)
+            .execute(&state.db)
             .await
             .expect("Error updating item amount");
     }
@@ -230,7 +225,7 @@ pub async fn purchase(
         payload.time.naive_utc(),
         total,
         payload.paid)
-        .fetch_one(&pool)
+        .fetch_one(&state.db)
         .await
         .expect("Error saving new voucher");
 
@@ -242,7 +237,7 @@ pub async fn purchase(
             payload.time.naive_utc(),
             payload.paid,
             "Sale")
-            .execute(&pool)
+            .execute(&state.db)
             .await
             .expect("Error saving new cash flow");
     }
@@ -251,10 +246,10 @@ pub async fn purchase(
 }
 
 pub async fn voucher_list(
-    State(pool): State<Pool<Postgres>>
+    State(state): State<AppState>
 ) -> (StatusCode, Json<Vec<Voucher>>) {
     let vouchers = sqlx::query_as!(Voucher, "SELECT * FROM vouchers")
-        .fetch_all(&pool)
+        .fetch_all(&state.db)
         .await
         .expect("Error loading vouchers");
 
@@ -262,10 +257,10 @@ pub async fn voucher_list(
 }
 
 pub async fn partial_vouchers(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<AppState>,
 ) -> (StatusCode, Json<Vec<PartialVoucher>>) {
     let vouchers = sqlx::query_as!(Voucher, "SELECT * FROM vouchers")
-        .fetch_all(&pool)
+        .fetch_all(&state.db)
         .await
         .expect("Error loading vouchers");
 
@@ -282,16 +277,16 @@ pub async fn partial_vouchers(
 }
 
 pub async fn voucher_by_id(
-    State(pool): State<Pool<Postgres>>,
+    State(state): State<AppState>,
     Path(id): Path<i32>,
 ) -> (StatusCode, Json<FullVoucher>) {
     let voucher: Voucher = sqlx::query_as!(Voucher, "SELECT * FROM vouchers WHERE id = $1", id)
-        .fetch_one(&pool)
+        .fetch_one(&state.db)
         .await
         .expect("Error loading voucher by id");
 
     let items: Vec<Item> = sqlx::query_as!(Item, "SELECT * FROM items WHERE id = ANY($1::int[])", &voucher.item_ids)
-        .fetch_all(&pool)
+        .fetch_all(&state.db)
         .await
         .expect("loading items by ids");
 

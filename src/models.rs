@@ -1,5 +1,19 @@
 use serde::{Serialize, Deserialize};
+use reqwest::Client as ReqwestClient;
+use axum_extra::extract::cookie::Key;
+use axum::extract::FromRef;
 
+#[derive(Clone)]
+pub struct AppState {
+    pub db: sqlx::PgPool,
+    pub key: Key
+}
+
+impl FromRef<AppState> for Key {
+    fn from_ref(state: &AppState) -> Self {
+        state.key.clone()
+    }
+}
 #[derive(Serialize, Clone, Debug)]
 pub struct Category {
     pub id: i32,
