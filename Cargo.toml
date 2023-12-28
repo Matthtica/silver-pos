@@ -19,9 +19,9 @@ tokio = { version = "1.32.0", features = ["full"] }
 tokio-stream = "0.1.14"
 tower = "0.4.13"
 tower-http = { version = "0.4.4", features = ["cors", "fs"]}
-shuttle-axum = "0.35.1"
-shuttle-runtime = "0.35.1"
-shuttle-secrets = "0.35.1"
+shuttle-axum = "0.35.2"
+shuttle-runtime = "0.35.2"
+shuttle-secrets = "0.35.2"
 shuttle-shared-db = { version = "0.35.0", features = ["postgres", "sqlx"] }
 jsonwebtoken = "9.2.0"
 argon2 = "0.5.2"
